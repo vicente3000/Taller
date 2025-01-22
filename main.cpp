@@ -15,7 +15,7 @@ class Nodo {
 
 //construimos el arbol con los nodos
 Nodo* construirArbol(const vector<int>& prev, int destino) {
-    vector<Nodo*> nodos(prev.size(), nullptr); // Array para guardar nodos por índice
+    vector<Nodo*> nodos(prev.size(), nullptr);
     Nodo* raiz = nullptr;
 
     int nodo_actual = destino;
