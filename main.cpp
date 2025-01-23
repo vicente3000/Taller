@@ -16,7 +16,7 @@ public:
 };
 
 Nodo* dijkstra(vector<vector<int>>& grafo, int destino) {
-    int n = grafo.size(); // creamos los nodos visitados y una lsita de nodos para crear el arbol 
+    int n = grafo.size(); // creamos los visidatods y  una lsita para crear el arbol de nodos
     vector<bool> visitado(n, false);
     vector<Nodo*> nodos(n, nullptr);
     vector<int> distancias(n, INT_MAX);
@@ -26,25 +26,19 @@ Nodo* dijkstra(vector<vector<int>>& grafo, int destino) {
     nodos[origen] = new Nodo('A' + origen, 0);
     distancias[origen] = 0;
 
-    //hasta que no queden nodos
-    while (true) {
-        //no visitados
-        int nodo_actual = -1;
-        int menor_distancia = INT_MAX;
+    queue<int> q;
+    q.push(origen);
 
-        for (int i = 0; i < n; ++i) {
-            if (!visitado[i] && distancias[i] < menor_distancia) {
-                menor_distancia = distancias[i];
-                nodo_actual = i;
-            }
-        }
+    //emepzamos  a buscar los nodos
+    while (!q.empty()) {
+        int nodo_actual = q.front();
+        q.pop();
 
-        //saltar si no encuentra
-        if (nodo_actual == -1) break;
-
+        // si esta visitado lo saltamos
+        if (visitado[nodo_actual]) continue;
         visitado[nodo_actual] = true;
 
-        //verificamos las conexiones
+        //buscamos cada nodo
         for (int i = 0; i < n; ++i) {
             if (grafo[nodo_actual][i] > 0) {
                 int nueva_distancia = distancias[nodo_actual] + grafo[nodo_actual][i];
@@ -52,22 +46,29 @@ Nodo* dijkstra(vector<vector<int>>& grafo, int destino) {
                 if (nueva_distancia < distancias[i]) {
                     distancias[i] = nueva_distancia;
 
-                    //si no esta el nodo se crea
+                    //si el nodo no existe se crea
                     if (nodos[i] == nullptr) {
                         nodos[i] = new Nodo('A' + i, nueva_distancia);
                     } else {
+                        //si ya existe se guarda distancia
                         nodos[i]->peso = nueva_distancia;
                     }
+
+                    //conectamos
                     nodos[nodo_actual]->hijos.push_back(nodos[i]);
+
+                    q.push(i);
                 }
             }
         }
     }
-    //si no se encuentra el camino
+
+    //si no encontramos el camno al nodo retornamos null
     if (distancias[destino] == INT_MAX) {
-        cout << "No hay un camino disponible hacia el nodo." << endl;
+        cout << "No hay un camino disponible hacia el nodo "<< endl;
         return nullptr;
     }
+
 
     return nodos[origen];
 }
