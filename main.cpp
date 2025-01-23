@@ -7,97 +7,100 @@
 using namespace std;
 
 class Nodo {
-    public:
+public:
     char valor;
+    int peso;
     vector<Nodo*> hijos;
-    Nodo(char v) : valor(v) {}
+
+    Nodo(char v, int p) : valor(v), peso(p) {}
 };
 
-//construimos el arbol con los nodos
-Nodo* construirArbol(const vector<int>& prev, int destino) {
-    vector<Nodo*> nodos(prev.size(), nullptr);
-    Nodo* raiz = nullptr;
+Nodo* dijkstra(vector<vector<int>>& grafo, int destino) {
+    int n = grafo.size(); // creamos los visidatods y  una lsita para crear el arbol de nodos
+    vector<bool> visitado(n, false);
+    vector<Nodo*> nodos(n, nullptr);
+    vector<int> distancias(n, INT_MAX);
+    int origen = 0;
 
-    int nodo_actual = destino;
-    while (nodo_actual != -1) {
-        // Convertimos el índice del nodo
-        char valor = 'A' + nodo_actual;
+    //nodo raiz
+    nodos[origen] = new Nodo('A' + origen, 0);
+    distancias[origen] = 0;
 
-        // Si el nodo actual no existe
-        if (nodos[nodo_actual] == nullptr) {
-            nodos[nodo_actual] = new Nodo(valor);
-        }
+    queue<int> q;
+    q.push(origen);
 
-        // conectamos el nodo actual como hijo
-        int nodo_padre = prev[nodo_actual];
-        if (nodo_padre != -1) {
-            if (nodos[nodo_padre] == nullptr) {
-                nodos[nodo_padre] = new Nodo('A' + nodo_padre);
-            }
-            nodos[nodo_padre]->hijos.push_back(nodos[nodo_actual]);
-        } else {
-            raiz = nodos[nodo_actual];
-        }
+    //emepzamos  a buscar los nodos
+    while (!q.empty()) {
+        int nodo_actual = q.front();
+        q.pop();
 
-        // Avanzamos
-        nodo_actual = nodo_padre;
-    }
-
-    return raiz;
-}
-
-//sacamos el peso del camino mas corto
-int dijkstra(vector<vector<int>>& grafo, int elegido, int cantidad, vector<int>& prev) {
-    vector<int> distancias(cantidad, INT_MAX);
-    vector<bool> visitado(cantidad, false);
-    queue<int> cola;
-
-    distancias[0] = 0;
-    cola.push(0);
-
-    //emepzamos desde el nodo 0 hasta el elejido comparando lso nodso
-    while (!cola.empty()) {
-        int nodo_actual = cola.front();
-        cola.pop();
-
-        //si esta visitado salta
+        // si esta visitado lo saltamos
         if (visitado[nodo_actual]) continue;
         visitado[nodo_actual] = true;
 
-        //verificamos als conexioens y comparamos las aristas
-        for (int i = 0; i < cantidad; ++i) {
+        //buscamos cada nodo
+        for (int i = 0; i < n; ++i) {
             if (grafo[nodo_actual][i] > 0) {
-                int peso_arista = grafo[nodo_actual][i];
-                int nueva_distancia = distancias[nodo_actual] + peso_arista;
+                int nueva_distancia = distancias[nodo_actual] + grafo[nodo_actual][i];
 
                 if (nueva_distancia < distancias[i]) {
                     distancias[i] = nueva_distancia;
-                    prev[i] = nodo_actual;
-                    cola.push(i);
+
+                    //si el nodo no existe se crea
+                    if (nodos[i] == nullptr) {
+                        nodos[i] = new Nodo('A' + i, nueva_distancia);
+                    } else {
+                        //si ya existe se guarda distancia
+                        nodos[i]->peso = nueva_distancia;
+                    }
+
+                    //conectamos
+                    nodos[nodo_actual]->hijos.push_back(nodos[i]);
+
+                    q.push(i);
                 }
             }
         }
     }
-    // Retornar la distancia al nodo elegido
-    return distancias[elegido];
+
+    //si no encontramos el camno al nodo retornamos null
+    if (distancias[destino] == INT_MAX) {
+        cout << "No hay un camino disponible hacia el nodo "<< endl;
+        return nullptr;
+    }
+
+
+    return nodos[origen];
 }
 
-//recusirividad para imprimri el arbol
-void recursividad(Nodo* nodo, int nivel) {
-    if (nodo == nullptr) return;
 
-    for (int i = 0; i < nivel; ++i) cout << "  ";
-    cout << nodo->valor << endl;
+void dfsImprimirCamino(Nodo* nodo, char destino, vector<char>& camino_actual, bool& encontrado) {
+    if (nodo == nullptr || encontrado) return;
 
-    for (Nodo* hijo : nodo->hijos) {
-        recursividad(hijo, nivel + 1);
+    camino_actual.push_back(nodo->valor);
+
+    //si encontramos el nodo que queremos imprimimos el camino recorrido para llegar
+    if (nodo->valor == destino) {
+        encontrado = true;
+        cout << "camino mas corto es: ";
+        for (char n : camino_actual) {
+            cout << n << " ";
+        }
+        cout << endl;
+        cout << "peso total:  " << nodo->peso << endl;
+    } else {
+        // recorremos el arbol
+        for (Nodo* hijo : nodo->hijos) {
+            //recursividad para llamar los hijos                               4,7,12,8
+            dfsImprimirCamino(hijo, destino, camino_actual, encontrado);
+        }
+    }
+
+    for (int i = camino_actual.size() - 1; i >= 0; --i) {
+        camino_actual[i] = 0;
+        break;
     }
 }
-//imprimimos el arbol
-void imprimirArbol(Nodo* nodo) {
-    recursividad(nodo, 0);
-}
-
 
 int main() {
     ifstream archivo("matriz.txt"); // lectura de archivo
@@ -128,16 +131,16 @@ int main() {
         matriz[i][col] = numero;
     } //saca cada caracter para convertirlo en int y luego lo guarda en la posicion de la matriz
 
-    cout << "Nodos disponibles: " ; //imprimimos los nodos disvponibles y pedimos al usuario el Nodo que quiere ir
+    cout << "nodos disponibles: " ; //imprimimos los nodos disvponibles y pedimos al usuario el Nodo que quiere ir
     for (int i = 0; i < n; i++) {
         char letra = i + 97 - 32;
         cout <<  letra << " ";
     }
-
+    //arreglar
     bool verdad;
     char nodo;
     do {
-        cout << "Ingrese el nodo que quiere ir:" << endl;
+        cout << "ingrese el nodo que quiere ir:" << endl;
         cin >> nodo;
         if (nodo >= 97 && nodo <= 96 + n) {
             verdad = false;
@@ -146,7 +149,7 @@ int main() {
             if (nodo >= 97 && nodo <= 96 + n) {
                 verdad = false;
             } else {
-                cout << "Ingrese un nodo de los dispoibles " << endl;
+                cout << "ingrese un nodo de los dispoibles " << endl;
                 verdad = true;
             }
         }
@@ -154,21 +157,15 @@ int main() {
 
     nodo = toupper(nodo);
     int nodo_indice = nodo - 'A';
+    Nodo* raiz = dijkstra(matriz,nodo_indice); //sacamos el peso del camino mas corto y mientras en paralelo se arma el arbol con los
+    //pesos acumulados
 
-    vector<int> prev(n, -1); // vector para rencostruir el arbol
-    int peso_total = dijkstra(matriz, nodo_indice, n, prev); //sacamos el peso del camino mas corto
+    //si no tenemos raiz no hacemos nada
+    if (raiz != nullptr) {
+        vector<char> camino_actual;
+        bool encontrado = false;
 
-    //si no se ecuetra el camino
-    if (peso_total == INT_MAX) {
-        cout << "No hay un camino al nodo seleccionado." << endl;
-    } else {
-        cout << "Nodo seleccionado: " << nodo << endl;
-        cout << "Peso total del camino mas corto: " << peso_total << endl;
-
-        //imprimir el arbol del camino más corto
-        Nodo* raiz = construirArbol(prev, nodo_indice);
-        cout << "El arbol del camino mas corto es: " << endl;
-        imprimirArbol(raiz);
+        dfsImprimirCamino(raiz, nodo, camino_actual, encontrado);
     }
     archivo.close();
 
